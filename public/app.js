@@ -7,6 +7,7 @@ const btnStartAll = document.getElementById('btn-start-all');
 const btnStopAll = document.getElementById('btn-stop-all');
 
 const inputTargetChannel = document.getElementById('input-target-channel');
+const toggleCloudMode = document.getElementById('toggle-cloud-mode');
 const btnSaveChannel = document.getElementById('btn-save-channel');
 
 const inputNewAccount = document.getElementById('input-new-account');
@@ -51,6 +52,7 @@ socket.on('init', (data) => {
   
   // Populate settings in inputs
   inputTargetChannel.value = appConfig.targetChannel || '';
+  toggleCloudMode.checked = appConfig.cloudMode || false;
   
   // Song Settings
   toggleSongAlerts.checked = appConfig.songAlerts.enabled;
@@ -100,7 +102,8 @@ socket.on('systemStatusUpdate', (data) => {
 // Save Channel
 btnSaveChannel.addEventListener('click', () => {
   const targetChannel = inputTargetChannel.value.trim();
-  socket.emit('saveChannel', { targetChannel });
+  const cloudMode = toggleCloudMode.checked;
+  socket.emit('saveChannel', { targetChannel, cloudMode });
 });
 
 // Add Bot Account
@@ -218,15 +221,23 @@ function renderAccountsList() {
     actionButtons += `<button class="btn btn-sm btn-danger btn-delete" data-name="${acc.name}">Delete</button>`;
     
     li.innerHTML = `
-      <div class="account-info">
-        <span class="account-name">${acc.name}</span>
-        <span class="account-status">
-          <span class="status-dot ${dotClass}"></span>
-          ${statusText}
-        </span>
+      <div class="account-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="account-info">
+          <span class="account-name">${acc.name}</span>
+          <span class="account-status">
+            <span class="status-dot ${dotClass}"></span>
+            ${statusText}
+          </span>
+        </div>
+        <div class="account-actions">
+          ${actionButtons}
+          <button class="btn btn-sm btn-secondary btn-toggle-cookies" data-name="${acc.name}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">🍪 Cookies</button>
+        </div>
       </div>
-      <div class="account-actions">
-        ${actionButtons}
+      <div class="cookies-panel" style="display: none; width: 100%; margin-top: 0.75rem; border-top: 1px dashed var(--border-color); padding-top: 0.75rem;">
+        <label style="font-size: 0.75rem; margin-bottom: 0.25rem;">Paste Cookie JSON Array:</label>
+        <textarea class="textarea-cookies" placeholder='[{"name": "__cf_bm", "value": "..."}, ...]' rows="3" style="font-size: 0.75rem; padding: 0.4rem; font-family: monospace;"></textarea>
+        <button class="btn btn-sm btn-primary btn-save-cookies" data-name="${acc.name}" style="margin-top: 0.5rem; width: 100%; font-size: 0.75rem; padding: 0.3rem;">Save Cookies</button>
       </div>
     `;
     
@@ -257,6 +268,21 @@ function renderAccountsList() {
       if (confirm(`Are you sure you want to delete account: ${name}?`)) {
         socket.emit('deleteAccount', { accountName: name });
       }
+    });
+
+    li.querySelector('.btn-toggle-cookies').addEventListener('click', () => {
+      const panel = li.querySelector('.cookies-panel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    li.querySelector('.btn-save-cookies').addEventListener('click', (e) => {
+      const name = e.target.getAttribute('data-name');
+      const textarea = li.querySelector('.textarea-cookies');
+      const cookiesText = textarea.value.trim();
+      if (!cookiesText) return;
+      socket.emit('saveCookies', { accountName: name, cookiesText });
+      li.querySelector('.cookies-panel').style.display = 'none';
+      textarea.value = '';
     });
     
     accountsListEl.appendChild(li);

@@ -18,6 +18,7 @@ if (!fs.existsSync(PROFILES_DIR)) {
 // Load configuration
 let config = {
   targetChannel: "",
+  cloudMode: false,
   accounts: [],
   streamMessages: [],
   messageInterval: 5,
@@ -93,12 +94,35 @@ io.on('connection', (socket) => {
     statuses: getAccountStatuses()
   });
 
-  // Save Target Channel
+  // Save Target Channel & Cloud Mode
   socket.on('saveChannel', (data) => {
     config.targetChannel = data.targetChannel;
+    config.cloudMode = !!data.cloudMode;
     saveConfig();
-    dashboardLog('success', `Target channel updated to: kick.com/${config.targetChannel}`);
+    dashboardLog('success', `Settings updated. Target: kick.com/${config.targetChannel} | Cloud Mode: ${config.cloudMode}`);
     io.emit('init', { config, statuses: getAccountStatuses() });
+  });
+
+  // Save Cookies
+  socket.on('saveCookies', (data) => {
+    const { accountName, cookiesText } = data;
+    try {
+      const cookies = JSON.parse(cookiesText);
+      if (!Array.isArray(cookies)) {
+        throw new Error("Cookies must be a JSON array.");
+      }
+      
+      const accountDir = path.join(PROFILES_DIR, accountName);
+      if (!fs.existsSync(accountDir)) {
+        fs.mkdirSync(accountDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(path.join(accountDir, 'cookies.json'), JSON.stringify(cookies, null, 2), 'utf8');
+      dashboardLog('success', `[${accountName}] Successfully saved imported login cookies.`);
+      io.emit('statusUpdate', { accountName, status: 'ready' });
+    } catch (err) {
+      dashboardLog('error', `[${accountName}] Failed to import cookies: ${err.message}`);
+    }
   });
 
   // Add Account
@@ -276,11 +300,16 @@ async function startBotInstance(accountName) {
   try {
     const userProfileDir = path.join(PROFILES_DIR, accountName);
     
-    // We run headfully in a small window because headless mode triggers Cloudflare block
+    const isCloudMode = !!config.cloudMode;
     const browser = await puppeteer.launch({
-      headless: false,
+      headless: isCloudMode,
       userDataDir: userProfileDir,
-      args: [
+      args: isCloudMode ? [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--window-size=1280,800'
+      ] : [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-blink-features=AutomationControlled',
@@ -305,6 +334,23 @@ async function startBotInstance(accountName) {
       page,
       status: 'logging'
     };
+
+    // Load cookies if running in Cloud mode (or if cookies exist anyway)
+    try {
+      const cookiePath = path.join(userProfileDir, 'cookies.json');
+      if (fs.existsSync(cookiePath)) {
+        const cookiesStr = fs.readFileSync(cookiePath, 'utf8');
+        const cookies = JSON.parse(cookiesStr);
+        if (cookies && cookies.length > 0) {
+          dashboardLog('info', `[${accountName}] Loading imported session cookies...`);
+          // Navigate to kick.com first to set context for cookie injection
+          await page.goto('https://kick.com', { waitUntil: 'domcontentloaded' });
+          await page.setCookie(...cookies);
+        }
+      }
+    } catch (cookieErr) {
+      dashboardLog('warning', `[${accountName}] Error loading cookies: ${cookieErr.message}`);
+    }
 
     const targetUrl = `https://kick.com/popout/${config.targetChannel}/chat`;
     dashboardLog('info', `Connecting '${accountName}' to: ${targetUrl}`);

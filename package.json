@@ -1,0 +1,17 @@
+{
+  "name": "kick-chatbot-dashboard",
+  "version": "1.0.0",
+  "description": "Multi-account Kick chat bot dashboard and song announcement system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "puppeteer": "^22.12.0",
+    "open": "^8.4.2"
+  },
+  "author": "Antigravity",
+  "license": "ISC"
+}

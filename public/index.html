@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Premium, real-time control panel for the Kick.com Multi-Account Chatbot and Spotify/Song announcer.">
+  <title>Kick Chatbot Controller</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="glow-container">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+  </div>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-logo">
+        <span class="logo-accent">KICK</span> Bot Controller
+      </div>
+      <div class="system-status-container">
+        <span class="status-label">System Status:</span>
+        <span id="system-status" class="status-badge status-idle">IDLE</span>
+      </div>
+      <div class="global-actions">
+        <button id="btn-start-all" class="btn btn-success btn-glow">Start All Bots</button>
+        <button id="btn-stop-all" class="btn btn-danger">Stop All Bots</button>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <!-- Left Column: Settings and Accounts -->
+      <div class="dashboard-col">
+        <!-- Target Streamer Channel Settings -->
+        <section class="card settings-card">
+          <div class="card-header">
+            <h2>Stream Channel Configuration</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="input-target-channel">Target Kick Channel</label>
+              <div class="input-group">
+                <span class="input-addon">kick.com/</span>
+                <input type="text" id="input-target-channel" placeholder="streamer_username" autocomplete="off">
+              </div>
+              <p class="form-help">Enter the username of the channel where the bots will send chat messages.</p>
+            </div>
+            <button id="btn-save-channel" class="btn btn-primary">Save Channel</button>
+          </div>
+        </section>
+
+        <!-- Kick Bot Accounts Manager -->
+        <section class="card accounts-card">
+          <div class="card-header">
+            <h2>Bot Accounts Manager</h2>
+          </div>
+          <div class="card-body">
+            <div class="add-account-form">
+              <div class="form-group">
+                <label for="input-new-account">Add Bot Account</label>
+                <div class="input-group">
+                  <input type="text" id="input-new-account" placeholder="Kick Account Username" autocomplete="off">
+                  <button id="btn-add-account" class="btn btn-success">Add</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="accounts-list-container">
+              <h3>Configured Accounts</h3>
+              <ul id="accounts-list" class="accounts-list">
+                <!-- Accounts will be injected here dynamically -->
+                <li class="empty-list-msg">No bot accounts added. Add one above!</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Center Column: Song Alerts and Stream Promo Messages -->
+      <div class="dashboard-col">
+        <!-- Song Alerts Configuration -->
+        <section class="card song-card">
+          <div class="card-header">
+            <h2>Live Song Alert settings</h2>
+            <div class="toggle-container">
+              <label class="switch">
+                <input type="checkbox" id="toggle-song-alerts">
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="input-song-filepath">Local Track Text File Path</label>
+              <input type="text" id="input-song-filepath" placeholder="C:/Users/name/Documents/current_song.txt">
+              <p class="form-help">Path to a text file updated by Spotify/Snip/Tuna. The bot reads this file and posts updates automatically.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="input-song-template">Chat Message Template</label>
+                <input type="text" id="input-song-template" placeholder="Now playing: {song} 🎵">
+                <p class="form-help">Use <code>{song}</code> as a placeholder for the track details.</p>
+              </div>
+              <div class="form-group flex-1">
+                <label for="input-song-cooldown">Cooldown (sec)</label>
+                <input type="number" id="input-song-cooldown" min="5" value="10">
+              </div>
+            </div>
+
+            <div class="song-action-buttons">
+              <button id="btn-save-song-settings" class="btn btn-primary">Save Song Settings</button>
+            </div>
+
+            <div class="song-manual-trigger">
+              <h4>Manual Song Announcement</h4>
+              <div class="input-group">
+                <input type="text" id="input-manual-song" placeholder="Song Artist - Title">
+                <button id="btn-trigger-manual-song" class="btn btn-secondary">Post Song</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stream Promotional Messages -->
+        <section class="card messages-card">
+          <div class="card-header">
+            <h2>Rotated Chat Messages (Promo)</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="input-message-interval">Interval (Minutes)</label>
+                <input type="number" id="input-message-interval" min="1" value="5">
+              </div>
+              <div class="form-group flex-1">
+                <label for="select-message-mode">Rotation Mode</label>
+                <select id="select-message-mode">
+                  <option value="sequential">Sequential</option>
+                  <option value="random">Random</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="add-message-container">
+              <div class="form-group">
+                <label for="textarea-new-message">Add New Chat Message</label>
+                <div class="input-group">
+                  <textarea id="textarea-new-message" rows="2" placeholder="e.g. Join our discord at discord.gg/mychannel!"></textarea>
+                  <button id="btn-add-message" class="btn btn-success">Add Msg</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="messages-list-container">
+              <h3>Message Queue</h3>
+              <ul id="messages-list" class="messages-list">
+                <!-- Messages injected here dynamically -->
+              </ul>
+            </div>
+
+            <button id="btn-save-message-settings" class="btn btn-primary">Save Message Settings</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column: Live Logs -->
+      <div class="dashboard-col full-height-col">
+        <!-- Live System Console -->
+        <section class="card console-card">
+          <div class="card-header">
+            <h2>Live Console Output</h2>
+            <button id="btn-clear-console" class="btn btn-sm btn-secondary">Clear</button>
+          </div>
+          <div class="card-body console-body">
+            <div id="console-output" class="console-output">
+              <div class="log-line log-info">[System] Control Panel ready. Add bot accounts and enter target channel to begin.</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Load Socket.io and frontend Javascript -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
